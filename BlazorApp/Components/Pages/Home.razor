@@ -1,0 +1,94 @@
+﻿@page "/"
+@attribute [RenderModeInteractiveServer(prerender: false)]
+
+@using BlazorApp.Stores
+@using System.ComponentModel
+
+@inject PokemonListStore pokemonStore;
+
+<PageTitle>Home</PageTitle>
+
+<h1>PokeList: </h1>
+
+<br />
+
+@if (!pokemonStore.Loading)
+{
+    <div class="grid grid-cols-4">
+        @foreach (var item in pokemonStore.PokemonList.Results)
+        {
+            <NavLink href="@($"pokemon/{item.Id}")">
+                <div class="min-height-[80px]">
+                    <img src="@item.FrontSprite" class="w-32 h-32" />
+                    <section class="flex flex-row gap-2">
+                        <b class="capitalize">@item.Name</b>
+                        <a href="#" @onclick="(e) => SetFavoriteOnClick(item.Id, item.IsFavorite)">
+                            <img class="w-6 h-6"
+                                 src="@(string.Format("dist/images/{0}.svg", item.IsFavorite ? "remove-favorite" : "add-favorite"))" />
+                        </a>
+                    </section>
+                </div>
+            </NavLink>
+        }
+    </div>
+
+    <section class="flex flex-row mt-8 gap-2 align-middle text-center">
+        <input type="button"
+               class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+               @onclick="PreviousPageOnClick"
+               value="Previous Page" />
+        <input type="text"
+               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-16 p-2.5"
+               @bind-value="pokemonStore.Page"
+               min="1" max="@pokemonStore.MaxPage" />
+        <input type="button"
+               class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+               @onclick="NextPageOnClick"
+               value="Next Page" />
+        <span>... @pokemonStore.MaxPage</span>
+    </section>
+}
+else
+{
+    <h1>Loading...</h1>
+}
+
+@code {
+    void PreviousPageOnClick()
+    {
+        if (pokemonStore.Page > 1)
+        {
+            pokemonStore.Page--;
+        }
+    }
+
+    void NextPageOnClick()
+    {
+        if (pokemonStore.Page < pokemonStore.MaxPage)
+        {
+            pokemonStore.Page++;
+        }
+    }
+
+    void SetFavoriteOnClick(int pokemonId, bool isFavorite)
+    {
+        this.InvokeAsync(async () => await pokemonStore.SetFavorite(pokemonId, isFavorite));
+    }
+
+    protected void OnPokemonStorePropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        this.StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        pokemonStore.PropertyChanged -= OnPokemonStorePropertyChanged;
+        pokemonStore.PropertyChanged += OnPokemonStorePropertyChanged;
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+            await pokemonStore.GetAsync(pokemonStore.Page);
+    }
+}

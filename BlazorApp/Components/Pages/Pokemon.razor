@@ -1,0 +1,48 @@
+﻿@page "/pokemon/{Id:int}"
+@using BlazorApp.Stores
+@using System.ComponentModel
+
+@inject PokemonDetailStore pokemonDetailStore
+
+<PageTitle>@pokemonDetailStore.Pokemon?.Name</PageTitle>
+
+@if (!pokemonDetailStore.Loading)
+{
+    var detail = pokemonDetailStore.Pokemon;
+
+    @if (detail != null)
+    {
+        <section class="flex flex-col flex-1 w-full items-center">
+            <img src="@detail.FrontSprite" class="w-64 h-64" />
+            <section class="flex flex-col items-center gap-2">
+                <b class="capitalize text-2xl">@detail.Name</b>
+                <a>
+                    <img class="w-6 h-6"
+                         src="@(string.Format("dist/images/{0}.svg", detail.IsFavorite ? "remove-favorite" : "add-favorite"))" />
+                </a>
+            </section>
+        </section>
+    }
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        pokemonDetailStore.PropertyChanged -= OnPokemonStorePropertyChanged;
+        pokemonDetailStore.PropertyChanged += OnPokemonStorePropertyChanged;
+
+        await pokemonDetailStore.GetPokemon(Id);
+    }
+
+    protected void OnPokemonStorePropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        this.StateHasChanged();
+    }
+}
