@@ -1,0 +1,35 @@
+﻿@page "/WildPokemons"
+@rendermode RenderMode.InteractiveServer
+
+@using BlazorApp.Services.Concrete
+@using System.ComponentModel
+@using System.Linq;
+
+@inject WildPokemonService wildPokemonService;
+
+<PageTitle>Wild Pokemons @wildPokemonService.WildPokemons.Count</PageTitle>
+
+@for (int i = 0; i < wildPokemonService.WildPokemons.Count; i++)
+{
+    var item = wildPokemonService.WildPokemons.ElementAtOrDefault(i);
+
+    <p>
+        Wild pokemon has appeared:
+        <NavLink href="@($"pokemon/{item.Id}")" class="bold capitalize">
+            @item.Name
+        </NavLink>
+    </p>
+}
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        wildPokemonService.PropertyChanged += OnPokemonStorePropertyChanged;
+    }
+
+    protected void OnPokemonStorePropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        this.InvokeAsync(() => this.StateHasChanged());
+    }
+}

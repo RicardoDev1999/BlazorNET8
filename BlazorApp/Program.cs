@@ -1,3 +1,4 @@
+using BlazorApp.BackgroundServices;
 using BlazorApp.Clients;
 using BlazorApp.Clients.Default;
 using BlazorApp.Components;
@@ -21,10 +22,15 @@ namespace BlazorApp
             builder.Host.UseSerilog((ctx, loggerConfig) =>
                 loggerConfig.ReadFrom.Configuration(ctx.Configuration));
 
-            builder.Services.AddStackExchangeRedisCache(options => {
+#if DEBUG
+            builder.Services.AddStackExchangeRedisCache(options =>
+            {
                 options.Configuration = builder.Configuration.GetConnectionString("Redis");
                 options.InstanceName = "Redis_";
             });
+#else
+            builder.Services.AddDistributedMemoryCache();
+#endif
 
             builder.Services.AddHttpClient<IPokemonApiClient, ApiClient>(opt =>
             {
@@ -34,12 +40,16 @@ namespace BlazorApp
             //Add concrete services
             builder.Services
                 .AddTransient<IPokemonService, PokemonService>()
-                .AddTransient<IFavoritePokemonService, FavoritePokemonService>();
+                .AddTransient<IFavoritePokemonService, FavoritePokemonService>()
+                .AddSingleton<WildPokemonService>();
 
             //Add stores
             builder.Services
                 .AddScoped<PokemonListStore>()
                 .AddScoped<PokemonDetailStore>();
+
+            builder.Services
+                .AddHostedService<WildPokemonBackgroundService>();
 
             var app = builder.Build();
 

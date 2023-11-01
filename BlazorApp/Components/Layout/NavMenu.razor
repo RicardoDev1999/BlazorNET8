@@ -1,4 +1,11 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using BlazorApp.Services.Concrete
+@using System.ComponentModel
+
+@rendermode RenderMode.InteractiveServer
+
+@inject WildPokemonService wildPokemonService
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">BlazorApp</a>
     </div>
@@ -12,6 +19,23 @@
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill" aria-hidden="true"></span> Pokédex
             </NavLink>
+            <NavLink class="nav-link" href="WildPokemons" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Wild 
+                <span class="bg-blue-100 text-blue-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded">@wildPokemonService.WildPokemons.Count</span>
+            </NavLink>
         </div>
     </nav>
 </div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        wildPokemonService.PropertyChanged += OnPokemonStorePropertyChanged;
+    }
+
+    protected void OnPokemonStorePropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        this.InvokeAsync(() => this.StateHasChanged());
+    }
+}

@@ -1,5 +1,5 @@
 ﻿@page "/"
-@attribute [RenderModeInteractiveServer(prerender: false)]
+@rendermode RenderMode.InteractiveServer
 
 @using BlazorApp.Stores
 @using System.ComponentModel
@@ -14,25 +14,18 @@
 
 @if (!pokemonStore.Loading)
 {
-    <div class="grid grid-cols-4">
+    <div class="grid grid-cols-4 gap-8">
         @foreach (var item in pokemonStore.PokemonList.Results)
         {
-            <NavLink href="@($"pokemon/{item.Id}")">
-                <div class="min-height-[80px]">
-                    <img src="@item.FrontSprite" class="w-32 h-32" />
-                    <section class="flex flex-row gap-2">
-                        <b class="capitalize">@item.Name</b>
-                        <a href="#" @onclick="(e) => SetFavoriteOnClick(item.Id, item.IsFavorite)">
-                            <img class="w-6 h-6"
-                                 src="@(string.Format("dist/images/{0}.svg", item.IsFavorite ? "remove-favorite" : "add-favorite"))" />
-                        </a>
-                    </section>
-                </div>
-            </NavLink>
+            <BlazorApp.Components.Pokemon.PokemonListItem 
+                SetFavoriteOnClick="SetFavoriteOnClick"
+                Item="item"
+                IsLoading="pokemonStore.SpecificLoading.Any(x => x == item.Id)"
+                />
         }
     </div>
 
-    <section class="flex flex-row mt-8 gap-2 align-middle text-center">
+    <section class="flex flex-row mt-8 gap-2 align-middle text-center justify-end items-center">
         <input type="button"
                class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                @onclick="PreviousPageOnClick"
@@ -70,14 +63,14 @@ else
         }
     }
 
-    void SetFavoriteOnClick(int pokemonId, bool isFavorite)
-    {
-        this.InvokeAsync(async () => await pokemonStore.SetFavorite(pokemonId, isFavorite));
-    }
-
     protected void OnPokemonStorePropertyChanged(object sender, PropertyChangedEventArgs e)
     {
         this.StateHasChanged();
+    }
+
+    void SetFavoriteOnClick(int pokemonId, bool isFavorite)
+    {
+        this.InvokeAsync(async () => await pokemonStore.SetFavorite(pokemonId, isFavorite));
     }
 
     protected override void OnInitialized()

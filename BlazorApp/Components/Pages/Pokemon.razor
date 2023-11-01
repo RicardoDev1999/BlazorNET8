@@ -13,7 +13,7 @@
     @if (detail != null)
     {
         <section class="flex flex-col flex-1 w-full items-center">
-            <img src="@detail.FrontSprite" class="w-64 h-64" />
+            <img src="@detail.FrontSprite" class="w-64 h-64" style="view-transition-name: 'pokemon-@detail.Id'" />
             <section class="flex flex-col items-center gap-2">
                 <b class="capitalize text-2xl">@detail.Name</b>
                 <a>

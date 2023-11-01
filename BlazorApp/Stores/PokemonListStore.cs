@@ -10,10 +10,14 @@ namespace BlazorApp.Stores
 {
     public class PokemonListStore : BaseStore
     {
-        private IPokemonService _pokemonService;
-        private IFavoritePokemonService _favoritePokemonService;
+        private readonly IPokemonService _pokemonService;
+        private readonly IFavoritePokemonService _favoritePokemonService;
+        private readonly ILogger<PokemonListStore> _logger;
 
         public bool Loading { get; set; } = true;
+
+        public List<int> SpecificLoading { get; set; } = [];
+
         public int MaxPage { get { return _pokemonListResponse.Count / PokemonService.LIST_LIMIT; } }
 
         private int _page = 1;
@@ -44,12 +48,13 @@ namespace BlazorApp.Stores
             }
         }
 
-        public PokemonListStore(IPokemonService pokemonService, IFavoritePokemonService favoritePokemonService)
+        public PokemonListStore(IPokemonService pokemonService, IFavoritePokemonService favoritePokemonService, ILogger<PokemonListStore> logger)
         {
             PropertyChanged += PokemonListStore_PropertyChanged;
 
             _pokemonService = pokemonService;
             _favoritePokemonService = favoritePokemonService;
+            _logger = logger;
         }
 
         private void ToggleLoading(bool loading)
@@ -69,16 +74,25 @@ namespace BlazorApp.Stores
         {
             var pokemon = PokemonList.Results.FirstOrDefault(x => x.Id == pokemonId);
 
-            //Update DOM
-            pokemon.IsFavorite = !current;
-            NotifyPropertyChanged(nameof(PokemonList));
+            //Toggle Loading
+            SpecificLoading.Add(pokemonId);
+            NotifyPropertyChanged(nameof(SpecificLoading));
 
             //Toggle favorite
-            var favorite = await _favoritePokemonService.ToggleFavorite(pokemonId);
+            try
+            {
+                var favorite = await _favoritePokemonService.ToggleFavorite(pokemonId);
+                await Task.Delay(500);
+                pokemon.IsFavorite = favorite;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+            }
 
-            //Update DOM with final state in case of failure
-            pokemon.IsFavorite = favorite;
-            NotifyPropertyChanged(nameof(PokemonList));
+            //Toggle Loading
+            SpecificLoading.Remove(SpecificLoading.FirstOrDefault(x => x == pokemonId));
+            NotifyPropertyChanged(nameof(SpecificLoading));
         }
 
         private async void PokemonListStore_PropertyChanged(object? sender, PropertyChangedEventArgs e)

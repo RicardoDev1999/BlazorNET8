@@ -7,15 +7,17 @@ namespace BlazorApp.Services.Concrete
 {
     public class PokemonService : IPokemonService
     {
-        private IPokemonApiClient _pokemonApiClient;
-        private IFavoritePokemonService _favoritePokemonService;
+        private readonly IPokemonApiClient _pokemonApiClient;
+        private readonly IFavoritePokemonService _favoritePokemonService;
+        private readonly ILogger<PokemonService> _logger;
 
         public const int LIST_LIMIT = 10;
 
-        public PokemonService(IPokemonApiClient pokemonApiClient, IFavoritePokemonService favoritePokemonService)
+        public PokemonService(IPokemonApiClient pokemonApiClient, IFavoritePokemonService favoritePokemonService, ILogger<PokemonService> logger)
         {
             _pokemonApiClient = pokemonApiClient;
             _favoritePokemonService = favoritePokemonService;
+            _logger = logger;
         }
 
         public async Task<PokemonListViewModel> GetPokemonList(int page)
@@ -36,10 +38,17 @@ namespace BlazorApp.Services.Concrete
 
             var pokemonIsFavoriteTasks = pokemonDetailsTasks
                 .Select(x => x.Result)
-                .Select(x =>_favoritePokemonService.IsFavorite(x.Id))
+                .Select(x => _favoritePokemonService.IsFavorite(x.Id))
                 .ToArray();
 
-            await Task.WhenAll(pokemonIsFavoriteTasks);
+            try 
+            {
+                await Task.WhenAll(pokemonIsFavoriteTasks);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+            }
 
             var ret = new PokemonListViewModel()
             {
@@ -51,7 +60,7 @@ namespace BlazorApp.Services.Concrete
                             ?.Result;
 
                         var pokeFavorite = pokemonIsFavoriteTasks
-                            .FirstOrDefault(pd => pd.Result.Id == pokeDetail.Id)
+                            ?.FirstOrDefault(pd => pd.IsCompletedSuccessfully && pd.Result.Id == pokeDetail.Id)
                             ?.Result;
 
                         return new
